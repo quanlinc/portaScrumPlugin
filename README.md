@@ -1,9 +1,10 @@
-portaScurmPlugin
+portaScrumPlugin
 ================
 
-Extra features for portaScurm
+Extra features for portaScrum
 
 Abstract:
+
 PortaScrum does not have a copy story feature, or just say move current story to next sprint feature(not likely anyone
 wants to move story to previous sprint), the current way will be puting the story back to backlog, switch to the new sprint
 then pull it back in.

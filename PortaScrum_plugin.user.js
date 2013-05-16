@@ -12,9 +12,6 @@ var plugin = (function($, doc){
       });
     };
 
-    return {
-        init:init
-    }
     
     var initListener = function(){
         $('input[value="copy"]').click(function(e){
@@ -103,7 +100,9 @@ var plugin = (function($, doc){
 	return url;
     };
 
-    
+    return {
+        init:init
+    }
 
 })(jQuery, document)
 

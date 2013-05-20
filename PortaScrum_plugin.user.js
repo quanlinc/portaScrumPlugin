@@ -1,111 +1,184 @@
 var plugin = (function($, doc){
 
-    var init = function(){
-      //jQuery(document).ready(function(){alert("hello");})
-      initUI();
-    };
-    
-    var initUI = function(){
-      $('img[alt="Back"]').each(function(){
-        var backlogLink = $(this).parent();
-        $(backlogLink).before('<input type="button" value="copy"/>');
-      });
-    };
+   //global variables
+   var protocol = doc.location.protocol + "//";
+   var host = doc.location.host;
+   var sprintListURL = protocol + host + "/sprints/list";
 
-    
-    var initListener = function(){
-        $('input[value="copy"]').click(function(e){
-            var targetId = e.target.id;
-        });
-    };
-    
-    //div id which contains the information of a story
-    //copy the info inside a story, get ready for posting
-    var copy = function(story){
-        var storyName=$('#' + story.attr("id") + '> h3 > span[id^="story_description"]').text();
-        var tasks = new Array();
-        
-        $(story).find('table').find('tr[class$="taskInProgress"]').each(function(){
-            var taskName = $(this).find('span').text();
-            var owner = $(this).find('td[class^="worker"]').text();
-        });
-    };
-    
-    //construct a data structure that will be passed to post data agaist next sprint
-    //TODO:need to think about what to pass in and how to put into data structure
-    var constructData = function(storyName, tasks, owner){
-        var story = {
-            "storyName": storyName,
-            "tasks": []
-        };
-        for(var i in tasks){
-            var task = tasks[i];
-            story.tasks.push({
-                "task": task,
-                "owner": owner
-		"estimate":estimate
-            });
-        }
-        
-        return story;
-    }
 
-    var postData = function(storyName, tasks){
-	//TODO: 1.find the next sprint url
-	//      2.post against that url, creat story first
-	//      3.locate the new story that has been created, adding new tasks to it
-	var targetURL;
-	
-	if(hasNextSrint()){
-	    //route to sprint list page, find the url of last sprint
-	} else {//TODO: probably popover a input dialogue to get new sprint name
-	    targetURL = createNewSprint(sprintName);
-	}
+   var init = function(){
+     initUI();
+     initListener();
+   };
+  
+   var initUI = function(){
+     $('img[alt="Back"]').each(function(){
+       var backlogLink = $(this).parent();
+       $(backlogLink).before('<input type="button" value="copy"/>');
+     });
+   };
 
-	$.ajax(
-	    url: targetURL,
-	    type: "POST",
-	    data: storyName,
-	    success:function(html){//successfully created new story
-		//add new tasks
-		var newStoryLocation = $(html).find('');
-		//might need to do $.each for tasks
-		$.ajax(
-		    url: targetURL,
-		    type: "POST",
-		    data: tasks,
-		    success:function(html){
 
-		    },
-		    error: function(XMLHttpRequest, textStatus, errorThrown){
+   var initListener = function(){
+       $('input[value="copy"]').click(function(e){
+           var story = $(e.target).parent().parent();     
+           copy(story,null);
+       });
+   };
+  
+   //div id which contains the information of a story
+   //copy the info inside a story, get ready for posting
+   var copy = function(story, callback){
+      
+       var storyName = story.find('> h3').find(' > span[id^="story_description"]').text();
+       var tasks = new Array();
+      
+       story.find('table').find('tr[class$="taskInProgress"], tr[class$="row_task"]').each(function(){
+           var taskName = $(this).find('span').text().trim();
+           var owner = $(this).find('td[class^="worker"]').text().trim();
+           var estimate = $(this).find('td:last-child').text().trim();
+           var task = {
+               "taskName": taskName,
+               "owner": owner,
+               "estimate": estimate
+           };
+           tasks.push(task);
+       });
+       var storyData = constructData(storyName, tasks);
+       postData(storyData);
+   };
+  
+   //construct a data structure that will be passed to post data agaist next sprint
+   //TODO:need to think about what to pass in and how to put into data structure
+   var constructData = function(storyName, tasks){
+       var story = {
+           "storyName": storyName,
+           "tasks": [],
+           "estimate": 0
+       };
+       for(var i in tasks){
+           var task = tasks[i];
+           story.tasks.push({
+               "task": task.taskName,
+               "owner": task.owner,
+               "estimate": task.estimate
+           });
+       }
 
-		    }
-		);
-	    },
-	    error: function(XMLHttpRequest, textStatus, errorThrown){
+       return story;
+   }
 
-	    }
-	);
-    };
+   var postData = function(storyData){
+   //TODO: 1.find the next sprint url--done
+   // 2.post against that url, creat story first
+   // 3.locate the new story that has been created, adding new tasks to it
+   var targetURL;
+   var result = hasNextSprint();
+   if(result.hasNext){
+   //route to sprint list page, find the url of last sprint
+       targetURL = result.nextURL;
+   } else {//TODO: probably popover a input dialogue to get new sprint name
+       targetURL = createNewSprint(sprintName);
+   }
 
-    //verify if we have a new sprint to copy our story over
-    //@return yes or no
-    var hasNextSprint = function(){
+   $.ajax({
+       url: targetURL,
+       type: "GET",
+       //data: storyName,
+       success:function(html){//get next sprint page first and populate data for creating new story
+           //prepare data for new story
+           $(html).find('#add_story').find('textArea').val(storyData.storyName);
+           $(html).find('#story_estimate').val(storyData.estimate);
+           var sprintId = $(html).find('#story_sprint_id').val().trim();
+           //create story
+           var targetURL = protocol + host + "/stories/create";
+           var data = {
+               "commit": "Add Story",
+               "story[description]": storyData.storyName,
+               "story[estimate]": storyData.estimate,
+               "story[sprint_id]": sprintId
+           };
+          
+           $.post(targetURL,data);
+           //finish create story
+          
+           var newStoryLocation = $(html).find('#add_story').prevAll('div:first');
+           var taskStoryId = newStoryLocation.find('#task_story_id').val().trim();
+           targetURL = protocol + host + "/tasks/create";
+           for(var i in storyData.tasks){
+               var task = storyData.tasks[i];
+               // construct task data
+               var taskData = {
+                   "commit": "Add Task",
+                   "task[estimate]": task.estimate,
+                   "task[title]": task.task,
+                   "task[story_id]": taskStoryId
+               };
+              
+               $.post(targetURL, taskData);
+           }
+           /*$.ajax({
+               url: targetURL,
+               type: "POST",
+               data: tasks,
+               success:function(html){
+  
+               },
+               error: function(XMLHttpRequest, textStatus, errorThrown){
+                   console.log(textStatus);
+                   console.log(erroroThrown);
+               }
+           });*/
+       },
+       error: function(XMLHttpRequest, textStatus, errorThrown){
+           console.log(textStatus);
+           console.log(errorThrown);
+       }
+   });
+   };
 
-    };
-    
-    //If we don't have a sprint to copy our data to, create a new one.
-    //@return url of the new sprint
-    var createNewSprint = function(sprintName){
-	return url;
-    };
+   //verify if we have a new sprint to copy our story over
+   //@return yes or no
+   var hasNextSprint = function(){
+       var currentLocation = doc.location.pathname;
+       var result = {
+           hasNext: false,
+           nextURL: ""
+       };
+       $.ajax({
+           url: sprintListURL,
+           type: "GET",
+           async: false, //performance issue, pulling the information is very slow, though the function works.
+           success:function(html){
+               var target = $(html).find('a[href=' + currentLocation +']').parent().parent()//locate current sprint link on list page, <tr> level
+               var hasNext = $(target).next().length;
+               var nextURL = protocol + host + $(target).next().find('a').attr("href");
+              
+               if(hasNext == 1){
+                   result.hasNext = true;
+                   result.nextURL = nextURL;
+               }
+           },
+           error: function(XMLHttpRequest, textStatus, errorThrown){
+               console.log(textStatus);
+               console.log(errorThrown);
+           }
+       });
 
-    return {
-        init:init
-    }
+       return result;
+   };
+  
+   //If we don't have a sprint to copy our data to, create a new one.
+   //@return url of the new sprint
+   var createNewSprint = function(sprintName){
+       return url;
+   };
+
+   return {
+       init: init      
+   }
 
 })(jQuery, document)
 
 
 plugin.init();
-

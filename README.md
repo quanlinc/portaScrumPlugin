@@ -1,6 +1,6 @@
 portaScurmPlugin
 ================
-
+### (Note: Looks like this tool will fade away soon, so won't waste any time developing on it from this point forward)
 extra features for portaScurm
 
 PortaScrum does not have a copy story feature, or just say move current story to next sprint feature(not likely anyone

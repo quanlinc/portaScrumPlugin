@@ -1,5 +1,8 @@
-portaScurmPlugin
+portaScrumPlugin
 ================
+Extra features for portaScrum
+
+Abstract:
 ### (Note: Looks like this tool will fade away soon, so won't waste any time developing on it from this point forward)
 extra features for portaScurm
 
@@ -9,12 +12,16 @@ then pull it back in.
 
 So this javascript plugin is going to provide some addtional feature to exhance user experience.
 
+Note: The early version of this plugin is intended to be run using greasemonkey plugin for FireFox, Chrome version plugin will be provided in later version, should be a easy migration.
+
+
 V0.1
+
 1. Add the ability to copy unfinished story to next sprint.
-  the copied story will only contain tasks that's been left over in last sprint
-2. Ability to check if there exist a new sprint that you can copy the current story to, if not, provide you the way to
-   create one within same page.
+  the copied story will only contain tasks that's been left over in last sprint.
+2. Ability to check if there exist a new sprint that you can copy the current story to, if not, provide you the way to create one within same page.
    
    
-V0.3
+V0.2
+
 1. Add drag adn drop feature to allow user move tasks around stories. (need some research to see if it's doable.
